@@ -25,9 +25,9 @@ public class PlayerHandler implements Listener{
 	public void playerJoinMessage(PlayerJoinEvent event){
 		Player player = event.getPlayer();
 		CapsCheck.cmap.put(player.getName(), new CustomCounter());
-		boolean is_muted = CapsCheck.is_muted.get(player.getName());
+		boolean muted = CapsCheck.is_muted.get(player.getName());
 		
-		if(is_muted == false){
+		if(muted == false){
 			if(!(player.isOp())){
 				player.sendMessage(pluginName + ChatColor.WHITE + "You have "+ warning_max +" warnings left.");
 			}
@@ -40,41 +40,31 @@ public class PlayerHandler implements Listener{
     public String onSpeak(AsyncPlayerChatEvent event) {
 		Player player = event.getPlayer();
 		CustomCounter cc = CapsCheck.cmap.get(player.getName());
-		boolean is_muted = CapsCheck.is_muted.get(player.getName());
+		boolean muted = CapsCheck.is_muted.get(player.getName());
 		
 		String chat = event.getMessage(); //Gets the attempted message
         String[] message = chat.split("(?:X)[A-Z]{"+ MaxCaps +"}|[.!?_]|[\\s]");
         
         if(cc.getMute_warning() >= warning_max){
 			unmute_time = Calendar.getInstance().get(Calendar.MINUTE) + 05;
-			is_muted = true;
+			muted = true;
 			Bukkit.broadcastMessage(pluginName + ChatColor.GREEN + (player.getDisplayName () + " has been "+ ChatColor.RED + "muted" + ChatColor.GREEN +" for excessive caps!"));
 			cc.resetMute();
 		}
         
         if(getCapsSize(message) > MaxCaps && !(player.isOp())){
-    		if(is_muted == true && (Calendar.getInstance().get(Calendar.MINUTE) < unmute_time)){
+    		if(muted == true && (Calendar.getInstance().get(Calendar.MINUTE) < unmute_time)){
     			event.setCancelled(true);
     			player.sendMessage(pluginName + ChatColor.RED + "You may not speak in chat!  You have muted for 5 minutes.");
     		} else {
     			CapsCheck.is_muted.put(player.getName(), new Boolean(false));
     		}
-    		
-    		cc.addKickWarning();
         	
         	String kick_result = (warning_max - cc.getKick_warning()) != 1 ? " warnings left" : " warning left";
-            String mute_result = (warning_max - cc.getMute_warning()) != 1 ? " kicks left" : " kick left";
 			
             event.getPlayer().sendMessage(pluginName + ChatColor.RED + "Excessive caps is not allowed!\nYou have " + (warning_max - cc.getKick_warning()) + kick_result + ".");
-			
             event.setMessage(chat.toLowerCase());
-            
-        	if(cc.getKick_warning() >= warning_max){
-        		cc.addMuteWarning();
-                player.kickPlayer("You've used excessive capital letters 3 times!\nYou have " + (warning_max - cc.getMute_warning()) + mute_result + " until you are muted!");
-                Bukkit.broadcastMessage(pluginName + ChatColor.GREEN + (player.getDisplayName () + " has been kicked for excessive caps!"));
-                cc.resetKick();  //Resets warning so that the player isn't always kicked upon login
-			}
+        	cc.addKickWarning(player);
         }
         return chat;
 	}
